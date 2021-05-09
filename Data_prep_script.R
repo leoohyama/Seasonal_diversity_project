@@ -2,17 +2,20 @@ library(vegan)
 library(tidyverse)
 library(zoo)
 library(viridis)
+library(picante)
+library(vegan)
+library(FD)
 
 
 #read ecological data
-df<-read.csv("~/Desktop/microbeta.csv")
+df<-read.csv("Data/microbeta.csv")
 df_c<-df %>%
-  filter(Treatment == "C")
-df_c$time_code<-paste(df_c$Month,df_c$Year,  sep = " ")
-df_c$time_code<-as.Date(as.yearmon(df_c$time_code))
+  filter(Treatment == "C") #get only control plots
+df_c$time_code<-paste(df_c$Month,df_c$Year,  sep = " ") #convert to date class
+df_c$time_code<-as.Date(as.yearmon(df_c$time_code))#convert to date class
 
 #read morphological trait data
-dft<-read.csv("~/Desktop/micro_traits.csv")
+dft<-read.csv("Data/micro_traits.csv")
 #clean up species
 dft$Genus.Species<-str_extract(dft$Genus.Species, "^\\w+.\\w+")
 #now remove any minors or queens
@@ -38,68 +41,17 @@ species_list1$EL<-((species_list1$Eye.length_1+species_list1$Eye.length_2)/2)/sp
 species_list1$ML<-((species_list1$Mandible.length_1+species_list1$Mandible.length_2)/2)/species_list1$WL
 
 species_traits<-species_list1 %>% dplyr::select(species, WL, HW,EL,ML)
-setwd("~/Desktop/")
+#setwd("~/Desktop/")
 #write.csv(species_traits, "species_traits_florida.csv") write out the trait data
+
+
 #read in new trait data with colony size
-species_traits<-read.csv("species_traits_florida.csv")
+species_traits<-read.csv("Data/species_traits_florida.csv")
+
+
 species_traits<-species_traits %>% dplyr::select(-Notes) %>%
-  mutate(log_colony = log(Colony_size))
-dplyr::select(-Colony_size)
+  mutate(log_colony = log(Colony_size)) %>% dplyr::select(-Colony_size)
 
-
-#we need species list for everytime code and site
-#then we will try calculating FD for each timecode
-#this will be how we set up a pipeline to calculate FD for every site for every time_code
-#this is used to weight the trait values by abundance
-
-by_sp<-df_c %>% dplyr::select(! c(Year, Month, Treatment)) %>%
-  pivot_longer(cols = -c("time_code", "Site"), names_to = "Species", values_to="abund") %>%
-  mutate(genus = str_extract(Species, "^[\\w]+")) %>%
-  group_by(time_code, Site,Species) %>%
-  summarise(total = sum(abund)) %>%
-  left_join(.,species_traits, by = c("Species"="species")) %>%
-  ungroup() %>%
-  filter(time_code == "2018-04-01") %>%
-  filter(!total == 0) %>%
-  group_by(Species) %>%
-  mutate(total_n = sum(total)) %>%
-  filter(!duplicated(Species)) %>%
-  group_by(Species) %>%
-  arrange(Species) %>%
-  ungroup()
-
-
-#now we have the traits
-species_list<-by_sp$Species
-time1_traits<-by_sp %>% dplyr::select(log_colony,WL,HW,EL,ML)
-rownames(time1_traits)<-species_list
-#now we have the comm data
-
-time1_comm <- df_c %>% filter(time_code == "2018-04-01") 
-site_names<-time1_comm$Site
-time1_comm<-time1_comm %>%
-  dplyr::select(-c(Year, Site, Month, Treatment,time_code))
-time1_comm = time1_comm[,colSums(time1_comm) > 0]
-rownames(time1_comm)<-site_names
-
-#rescale trait data
-trait_data = scale(time1_traits)
-library(vegan)
-trait_matrix = vegan::vegdist(trait_data,"euclidean")
-branch_lengths<-hclust(trait_matrix,"average")
-branch_lengths
-library(picante)
-trait_tree = ape::as.phylo(branch_lengths)
-plot(trait_tree)
-str(time1_comm)
-FD<-picante::pd(time1_comm, trait_tree)
-vegan_tbl<-data.frame(Site = as.vector(rownames(FD)), SR = FD$SR, FD = FD$PD)
-
-#calculate functional richness
-trial<-dbFD(time1_traits, time1_comm)
-trial$FRic
-trial$FEve
-trial$FDiv
 
 #program to get all fmetrics
 
@@ -176,7 +128,7 @@ for(i in 1:length(time_stamp_list)){
   func_rich_metrics<-data.frame(Site = rownames(data.frame(trial)), FRic = trial$FRic,
                                 FEve = trial$FEve, FDiv = trial$FDiv)
   
-  for(k in 1:nrow(func_ruch_metrics)){
+  for(k in 1:nrow(func_rich_metrics)){
     trait_table_all$FRich[trait_table_all$Site == paste(func_rich_metrics$Site[k]) &
                             trait_table_all$time_code == time_stamp_list[i]]<-func_rich_metrics$FRic[k]
     trait_table_all$FEve[trait_table_all$Site == paste(func_rich_metrics$Site[k]) &
@@ -209,7 +161,7 @@ trait_table_all%>%group_by(time_code) %>%
   theme_bw() 
 
 ####facet graph comparinng all metrics
-jesuschrist<-trait_table_all %>%
+facet_data<-trait_table_all %>%
   group_by(time_code) %>%
   summarise(total = n(), mean_FRich = mean(FRich, na.rm = T), 
             std.error.FRich=(sd(FRich, na.rm = T)/sqrt(total)),
@@ -223,22 +175,22 @@ jesuschrist<-trait_table_all %>%
   ), names_to = c("type"),
   values_to= "value") 
 
-jesuschrist$std.error<-NA
-for(i in 1:nrow(jesuschrist)){
-  if(grepl("FRich", jesuschrist$type[i])){
-    jesuschrist$std.error[i]<-jesuschrist$std.error.FRich[i]
+facet_data$std.error<-NA
+for(i in 1:nrow(facet_data)){
+  if(grepl("FRich", facet_data$type[i])){
+    facet_data$std.error[i]<-facet_data$std.error.FRich[i]
   }else{
-    if(grepl("SR", jesuschrist$type[i])){jesuschrist$std.error[i]<-jesuschrist$std.error.SR[i]}else{
-      if(grepl("Fdiv", jesuschrist$type[i])){
-        jesuschrist$std.error[i]<-jesuschrist$std.error.Fdiv[i]
+    if(grepl("SR", facet_data$type[i])){facet_data$std.error[i]<-facet_data$std.error.SR[i]}else{
+      if(grepl("Fdiv", facet_data$type[i])){
+        facet_data$std.error[i]<-facet_data$std.error.Fdiv[i]
       }else{
-        jesuschrist$std.error[i]<-jesuschrist$std.error.FEve[i]
+        facet_data$std.error[i]<-facet_data$std.error.FEve[i]
       }
     }
   }
 }  
 
-ggplot(data = jesuschrist) + 
+ggplot(data = facet_data) + 
   geom_line(aes(x= (time_code), y = value)) +
   geom_errorbar(aes(x = time_code, ymin = value-std.error,
                     ymax = value+std.error), width = 0.5)+
@@ -291,45 +243,9 @@ for(i in 1:nrow(trait_table_all)){
 
 hist(trait_table_all$FEve)
 obs<-seq(nrow(trait_table_all)) #observation level random effect
-library(lme4)
-library(MuMIn)
 
-m1<-glmer(data = trait_table_all, (FRich)~season + (1|Site)+(1|obs), family = Gamma(link= "log"))
-m1<-glmer(data = trait_table_all, (FEve)~season + (1|Site),family = Gamma(link= "log"))
-m1<-glmer(data = trait_table_all, (FDiv)~season + (1|Site), family = Gamma(link= "inverse"))
-m1<-glmer.nb(data = trait_table_all, (SR)~season + (1|Site))
+write.csv(trait_table_all,"Data/model_data.csv")
 
-hist(trait_table_all$FDiv)
-m1<-lmer(data = trait_table_all, FEve~poly(time_numeric,2) + (1|Site))
-m1<-lmer(data = trait_table_all, FDiv~poly(time_numeric,2) + (1|Site))
-
-m1.1<-glmer(data = trait_table_all, FEve~poly(time_numeric,2) + (1|Site),family = Gamma(link= "log"))
-summary(m1)
-
-AIC(m1,m1.1)
-r.squaredGLMM(m1)
-
-##SR
-m2<-glmer.nb(data = trait_table_all, SR~poly(time_numeric,2) + (1|Site))
-summary(m2)
-r.squaredGLMM(m2)
-
-
-#FDveg
-m1.1<-glmer(data = trait_table_all, FRich~poly(time_numeric,2) + (1|Site),family = Gamma(link= "log"))
-summary(m1.1)
-plot(ggpredict(m1.1, terms="time_numeric [all]"))
-
-
-library(ggeffects)
-plot(ggpredict(m1, terms="time_numeric [all]"))
-
-m1<-glm(data = trait_table_all, (FDiv)~season, family= Gamma(link = "log"))
-summary(m1)
-
-
-
-plot(trait_table_all$SR,trait_table_all$FEve)
 
 
 
@@ -520,7 +436,7 @@ for(i in 1:length(time_stamp_list)){
   func_rich_metrics<-data.frame(Site = rownames(data.frame(trial)), FRic = trial$FRic,
                                 FEve = trial$FEve, FDiv = trial$FDiv)
   
-  for(k in 1:nrow(func_ruch_metrics)){
+  for(k in 1:nrow(func_rich_metrics)){
     trait_table_all_t$FRich[trait_table_all_t$Site == paste(func_rich_metrics$Site[k]) &
                               trait_table_all_t$time_code == time_stamp_list[i]]<-func_rich_metrics$FRic[k]
     trait_table_all_t$FEve[trait_table_all_t$Site == paste(func_rich_metrics$Site[k]) &
