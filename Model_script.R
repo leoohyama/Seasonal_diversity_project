@@ -1,11 +1,77 @@
 library(lme4)
 library(MuMIn)
+library(emmeans)
+library(RVAideMemoire)
+library(DHARMa)
 
-model_data<- read.csv("Data/model_data.csv")
-m1<-glmer(data = trait_table_all, (FRich)~season + (1|Site)+(1|obs), family = Gamma(link= "log"))
-m1<-glmer(data = trait_table_all, (FEve)~season + (1|Site),family = Gamma(link= "log"))
-m1<-glmer(data = trait_table_all, (FDiv)~season + (1|Site), family = Gamma(link= "inverse"))
-m1<-glmer.nb(data = trait_table_all, (SR)~season + (1|Site))
+overdisp_fun <- function(model) {
+  rdf <- df.residual(model)
+  rp <- residuals(model,type="pearson")
+  Pearson.chisq <- sum(rp^2)
+  prat <- Pearson.chisq/rdf
+  pval <- pchisq(Pearson.chisq, df=rdf, lower.tail=FALSE)
+  c(chisq=Pearson.chisq,ratio=prat,rdf=rdf,p=pval)
+}
+
+model_data<- read.csv("Data/model_data.csv")#load model data
+
+#assess impacts across season type for all four metrics
+
+#assess frich across season (pretty weak but significant model)
+m1<-lmer(data = model_data, 
+          (FRich)~season + (1|Site))
+
+summary(m1)
+r.squaredGLMM(m1)
+
+#check residuals
+simulationOutput <- simulateResiduals(fittedModel = m1, plot = F)
+plot(simulationOutput)
+
+#get post hoc info
+emm1 = emmeans(m1, specs = pairwise ~ season)
+emm1$contrasts
+
+#checking FEve
+m1<-lmer(data = model_data, 
+         FEve~season + (1|Site))
+summary(m1)
+r.squaredGLMM(m1)
+#check residuals
+simulationOutput <- simulateResiduals(fittedModel = m1, plot = F)
+plot(simulationOutput)
+
+
+#checking FDiv
+m1<-lmer(data = model_data, 
+         FDiv~season + (1|Site))
+
+summary(m1)
+r.squaredGLMM(m1)
+#check residuals
+simulationOutput <- simulateResiduals(fittedModel = m1, plot = F)
+plot(simulationOutput)
+
+#checking SR
+m1<-glmer.nb(data = model_data, 
+         SR~season + (1|Site))
+
+summary(m1)
+r.squaredGLMM(m1)
+#check residuals
+simulationOutput <- simulateResiduals(fittedModel = m1, plot = F)
+plot(simulationOutput)
+
+
+
+###Assessing fluctuations across time
+
+m1<-glmer(data = trait_table_all, 
+          (FEve)~season + (1|Site),family = Gamma(link= "log"))
+m1<-glmer(data = trait_table_all, 
+          (FDiv)~season + (1|Site), family = Gamma(link= "inverse"))
+m1<-glmer.nb(data = trait_table_all, 
+             (SR)~season + (1|Site))
 
 hist(trait_table_all$FDiv)
 m1<-lmer(data = trait_table_all, FEve~poly(time_numeric,2) + (1|Site))
