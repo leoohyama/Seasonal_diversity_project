@@ -67,6 +67,7 @@ trait_table_all$SR<-NA
 trait_table_all$FRich<-NA
 trait_table_all$FEve<-NA
 trait_table_all$FDiv<-NA
+trait_table_all$jost<-NA
 
 for(i in 1:length(time_stamp_list)){
   
@@ -99,6 +100,13 @@ for(i in 1:length(time_stamp_list)){
   time1_comm = time1_comm[rowSums(time1_comm)> 0, ]
   #remove species removed from comm from traits
   
+  #calculate jost diversity
+  jost.frame=data.frame(Jost =exp(vegan::diversity(time1_comm, index = "shannon")),
+                        Site = rownames(data.frame(exp(vegan::diversity(time1_comm, index = "shannon")))))
+  for(m in 1:nrow(jost.frame)){
+    trait_table_all$jost[trait_table_all$Site == paste(jost.frame$Site[m]) &
+                            trait_table_all$time_code == time_stamp_list[i]]<-jost.frame$Jost[m]
+  }
   
   #rescale trait data
   trait_data = scale(time1_traits)
@@ -153,32 +161,23 @@ trait_table_all%>% group_by(time_code, Site) %>%
   geom_line()
 
 
-trait_table_all%>%group_by(time_code) %>%
-  summarise(total = n(), mean_frich = mean(FRich, na.rm = T), 
-            Frich_std_eror=(sd(FRich, na.rm = T)/sqrt(total)),
-            SR = mean(SR, na.rm=T),
-            SR_std_eror=(sd(SR, na.rm = T)/sqrt(total))) %>%
-  ggplot(.) + 
-  geom_line(aes(x= (time_code), y = mean_frich), color = "black") +
-  geom_errorbar(aes(x = time_code, ymin = mean_frich-std_eror,
-                    ymax = mean_frich+std_eror), width = 0.5)+
-  geom_point(aes(x= (time_code), y = mean_frich), color = "black",
-             pch = 21, size = 3, fill = "white",stroke = 2.5) +
-  labs(x = "Time", y = "Average Functional Richness") +
-  theme_bw() 
 
 ####facet graph comparinng all metrics
 facet_data<-trait_table_all %>%
   group_by(time_code) %>%
-  summarise(total = n(), mean_FRich = mean(FRich, na.rm = T), 
-            std.error.FRich=(sd(FRich, na.rm = T)/sqrt(total)),
+  summarise(total_plots = n(), mean_FRich = mean(FRich, na.rm = T), 
+            std.error.FRich=(sd(FRich, na.rm = T)/sqrt(total_plots)),
             mean_SR = mean(SR, na.rm=T),
-            std.error.SR = sd(SR, na.rm=T)/sqrt(total),
+            std.error.SR = sd(SR, na.rm=T)/sqrt(total_plots),
             mean_Fdiv = mean(FDiv, na.rm =T),
-            std.error.Fdiv = sd(FDiv, na.rm = T)/sqrt(total),
+            std.error.Fdiv = sd(FDiv, na.rm = T)/sqrt(total_plots),
             mean_FEve = mean(FEve, na.rm =T),
-            std.error.FEve = sd(FEve, na.rm = T)/sqrt(total)) %>%
-  pivot_longer(., cols = c( "mean_SR", "mean_FRich","mean_Fdiv","mean_FEve"
+            std.error.FEve = sd(FEve, na.rm = T)/sqrt(total_plots),
+            mean_Jost = mean(jost,na.rm =T),
+            std.error.Jost=sd(jost, na.rm = T)/sqrt(total_plots),
+            mean_abundance = mean(total),
+            std.error.abund = sd(total, na.rm=T)/sqrt(total_plots)) %>%
+  pivot_longer(., cols = c( "mean_SR", "mean_FRich","mean_Fdiv","mean_FEve","mean_Jost","mean_abundance"
   ), names_to = c("type"),
   values_to= "value") 
 
@@ -190,20 +189,40 @@ for(i in 1:nrow(facet_data)){
     if(grepl("SR", facet_data$type[i])){facet_data$std.error[i]<-facet_data$std.error.SR[i]}else{
       if(grepl("Fdiv", facet_data$type[i])){
         facet_data$std.error[i]<-facet_data$std.error.Fdiv[i]
-      }else{
+      }else{if(grepl("Jost", facet_data$type[i])){
+        facet_data$std.error[i]<-facet_data$std.error.Jost[i]
+      }else
+      {if(grepl("FEve", facet_data$type[i])){
         facet_data$std.error[i]<-facet_data$std.error.FEve[i]
+      }else{
+        facet_data$std.error[i]<-facet_data$std.error.abund[i]
+      }
+          }
+        
       }
     }
   }
 }  
 
 ggplot(data = facet_data) + 
-  geom_line(aes(x= (time_code), y = value)) +
+  geom_line(aes(x= (time_code), y = value), size = 1.5) +
   geom_errorbar(aes(x = time_code, ymin = value-std.error,
                     ymax = value+std.error), width = 0.5)+
   geom_point(aes(x= (time_code), y = value), 
              pch = 21, size = 3, fill = "white",stroke = 2.5) +
-  facet_wrap(~type,scales = "free_y", nrow = 2)
+  facet_wrap(~type,scales = "free_y", nrow = 2) +
+  geom_hline(data = subset(facet_data, type == "mean_abundance"), 
+             aes(yintercept = mean(trait_table_all$total)), lty= 2)+
+  geom_hline(data = subset(facet_data, type == "mean_Fdiv"), 
+             aes(yintercept = mean(trait_table_all$FDiv,na.rm=T)), lty= 2) +
+  geom_hline(data = subset(facet_data, type == "mean_FEve"), 
+             aes(yintercept = mean(trait_table_all$FEve,na.rm=T)), lty= 2) +
+  geom_hline(data = subset(facet_data, type == "mean_FRich"), 
+             aes(yintercept = mean(trait_table_all$FRich,na.rm=T)), lty= 2) +
+  geom_hline(data = subset(facet_data, type == "mean_Jost"), 
+             aes(yintercept = mean(trait_table_all$jost,na.rm=T)), lty= 2) +
+  geom_hline(data = subset(facet_data, type == "mean_SR"), 
+             aes(yintercept = mean(trait_table_all$SR,na.rm=T)), lty= 2)
 
 
 
