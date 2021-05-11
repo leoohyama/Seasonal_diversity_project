@@ -68,7 +68,6 @@ trait_table_all$FRich<-NA
 trait_table_all$FEve<-NA
 trait_table_all$FDiv<-NA
 
-
 for(i in 1:length(time_stamp_list)){
   
   by_sp<-df_c %>% dplyr::select(! c(Year, Month, Treatment)) %>%
@@ -137,15 +136,23 @@ for(i in 1:length(time_stamp_list)){
                            trait_table_all$time_code == time_stamp_list[i]]<-func_rich_metrics$FDiv[k]
   }
   
+  
+  ses.mpd.traits = picante::ses.mpd(time1_comm, trait_matrix, null.model = "taxa.labels",
+                                    abundance.weighted = TRUE, runs = 500)
+  
   print(paste(i, "has finished", " "))
 }
 
-
-
-trait_table_all%>% group_by(time_code) %>%
-  summarise(mean_frich = mean(FRich, na.rm = T)) %>%
-  ggplot(., aes(x= (time_code), y = mean_frich)) + 
+trait_table_all %>% mutate(difference = mpd.obs-mpd.rand.mean) %>%
+  group_by(time_code) %>%
+  summarise(mean_dff = mean(difference, na.rm =T))
+min(trait_table_all$mpd.obs.p)
+trait_table_all%>% group_by(time_code, Site) %>%
+  summarise(mean_metric = mean(mpd.obs.p, na.rm = T)) %>%
+  ggplot(., aes(x= (time_code), y = mean_metric, color = Site)) + 
   geom_line()
+
+
 trait_table_all%>%group_by(time_code) %>%
   summarise(total = n(), mean_frich = mean(FRich, na.rm = T), 
             Frich_std_eror=(sd(FRich, na.rm = T)/sqrt(total)),
@@ -247,7 +254,9 @@ obs<-seq(nrow(trait_table_all)) #observation level random effect
 write.csv(trait_table_all,"Data/model_data.csv")
 
 
-
+ses.mpd.traits = picante::ses.mpd(time1_comm, trait_matrix, null.model = "taxa.labels",
+                                  abundance.weighted = TRUE, runs = 500)
+ses.mpd.traits
 
 
 
