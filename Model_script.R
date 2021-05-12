@@ -15,8 +15,8 @@ model_data$obs<-seq(1:nrow(model_data))
 #assess impacts across season type for all four metrics
 
 #assess frich across season (pretty weak but significant model)
-m1<-lmer(data = model_data, 
-          log(FRich)~season + (1|Site))
+m1<-glmer(data = model_data, 
+          (FDiv)~season + (1|Site))
 hist(model_data$FRich)
 
 summary(m1)

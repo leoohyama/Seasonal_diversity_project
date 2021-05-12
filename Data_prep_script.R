@@ -5,7 +5,7 @@ library(viridis)
 library(picante)
 library(vegan)
 library(FD)
-
+library(MASS)
 
 #read ecological data
 df<-read.csv("Data/microbeta.csv")
@@ -68,6 +68,7 @@ trait_table_all$FRich<-NA
 trait_table_all$FEve<-NA
 trait_table_all$FDiv<-NA
 trait_table_all$jost<-NA
+trait_table_all$mean_Frich_Null<-NA
 
 for(i in 1:length(time_stamp_list)){
   
@@ -105,7 +106,7 @@ for(i in 1:length(time_stamp_list)){
                         Site = rownames(data.frame(exp(vegan::diversity(time1_comm, index = "shannon")))))
   for(m in 1:nrow(jost.frame)){
     trait_table_all$jost[trait_table_all$Site == paste(jost.frame$Site[m]) &
-                            trait_table_all$time_code == time_stamp_list[i]]<-jost.frame$Jost[m]
+                           trait_table_all$time_code == time_stamp_list[i]]<-jost.frame$Jost[m]
   }
   
   #rescale trait data
@@ -128,10 +129,42 @@ for(i in 1:length(time_stamp_list)){
     trait_table_all$FD_veg[trait_table_all$Site == paste(vegan_tbl$Site[j]) &
                              trait_table_all$time_code == time_stamp_list[i]]<-vegan_tbl$FD[j]
   }
+  #ses
+  ses.mpd.traits = picante::ses.mpd(time1_comm, trait_matrix, null.model = "independentswap",
+                                    abundance.weighted = FALSE, runs = 999)
   
+  #calculate the ses of functional indices for 1000 null models
+
+
+  ##################################################################
+  #this is where you randomize the community matrix
+  ##################################################################
+  #first create null model datset to hold all the values
+  null_model_results<-data.frame(run = rep(1:1000, each =length(rownames(time1_comm))),
+                                 Site = rep(rownames(time1_comm), 1000), FRich.Null = NA,
+                                 FEve.Null = NA, FDiv.Null = NA, ID = seq(1:1000))
+  for (b in 1:1000) {
+    randommatrixswap<-randomizeMatrix(time1_comm, null.model = c("independentswap"), iterations = 1000)
+    randommatrixswap
+    #then you calculate calculate functional metrics with randomized comm data (need to do this 1000 times)
+    trial<-dbFD(time1_traits, randommatrixswap, w.abun =T,calc.FDiv =T)
+    func_rich_metrics<-data.frame(Site = rownames(data.frame(trial)), FRic = trial$FRic,
+                                  FEve = trial$FEve, FDiv = trial$FDiv, 
+                                  Run = rep(paste(b), length(rownames(data.frame(trial)))))
+    
+    for(a in 1:nrow(func_rich_metrics)){
+      null_model_results$FRich.Null[null_model_results$run == paste(b) &
+                                      null_model_results$Site == paste(func_rich_metrics$Site[a])]<-func_rich_metrics$FRic[a]
+      
+    }
+    
+  }
+
+
   
+  ##########################
   #calculate functional richness
-  trial<-dbFD(time1_traits, time1_comm)
+  trial<-dbFD(time1_traits, time1_comm, w.abun =T,calc.FDiv =T)
   func_rich_metrics<-data.frame(Site = rownames(data.frame(trial)), FRic = trial$FRic,
                                 FEve = trial$FEve, FDiv = trial$FDiv)
   
@@ -161,11 +194,15 @@ trait_table_all%>% group_by(time_code, Site) %>%
   geom_line()
 
 
-
+trait_table_all %>%
+  group_by(time_code) %>% summarise(mean = mean(FRich, na.rm =T))
 ####facet graph comparinng all metrics
 facet_data<-trait_table_all %>%
   group_by(time_code) %>%
-  summarise(total_plots = n(), mean_FRich = mean(FRich, na.rm = T), 
+  summarise(total_plots = n(), 
+            mean_FD_veg = mean(FD_veg, na.rm = T),
+            std.error.FD_veg=(sd(FD_veg, na.rm = T)/sqrt(total_plots)),
+            mean_FRich = mean(FRich, na.rm = T), 
             std.error.FRich=(sd(FRich, na.rm = T)/sqrt(total_plots)),
             mean_SR = mean(SR, na.rm=T),
             std.error.SR = sd(SR, na.rm=T)/sqrt(total_plots),
@@ -177,7 +214,7 @@ facet_data<-trait_table_all %>%
             std.error.Jost=sd(jost, na.rm = T)/sqrt(total_plots),
             mean_abundance = mean(total),
             std.error.abund = sd(total, na.rm=T)/sqrt(total_plots)) %>%
-  pivot_longer(., cols = c( "mean_SR", "mean_FRich","mean_Fdiv","mean_FEve","mean_Jost","mean_abundance"
+  pivot_longer(., cols = c("mean_FD_veg", "mean_SR", "mean_FRich","mean_Fdiv","mean_FEve","mean_Jost","mean_abundance"
   ), names_to = c("type"),
   values_to= "value") 
 
@@ -194,35 +231,72 @@ for(i in 1:nrow(facet_data)){
       }else
       {if(grepl("FEve", facet_data$type[i])){
         facet_data$std.error[i]<-facet_data$std.error.FEve[i]
-      }else{
-        facet_data$std.error[i]<-facet_data$std.error.abund[i]
+      }else{if(grepl("FD_veg", facet_data$type[i])){
+        facet_data$std.error[i]<-facet_data$std.error.FD_veg[i]
+      }else{facet_data$std.error[i]<-facet_data$std.error.abund[i]}
+        
       }
-          }
+      }
         
       }
     }
   }
 }  
+#this is a key for the geom_rect, displays values for each month
+data.frame(date = unique(facet_data$time_code), 
+           code = as.numeric(unique(facet_data$time_code)))
+
+
+facet_data$type<-factor(facet_data$type)
+levels(facet_data$type)<-c("Abundance", "Functional Diversity","Functional Divergence", "Functional Evenness", 
+                           "Functional Richness", "Jost Diversity", "Species Richness")
+
+
 
 ggplot(data = facet_data) + 
+  geom_rect(xmin=17652,
+            xmax=17806, ymin=-Inf, ymax=Inf, fill="lightblue", alpha=0.03) +
+  geom_rect(xmin=18017,
+            xmax=Inf, ymin=-Inf, ymax=Inf, fill="lightblue", alpha=0.03) +
   geom_line(aes(x= (time_code), y = value), size = 1.5) +
   geom_errorbar(aes(x = time_code, ymin = value-std.error,
                     ymax = value+std.error), width = 0.5)+
   geom_point(aes(x= (time_code), y = value), 
              pch = 21, size = 3, fill = "white",stroke = 2.5) +
   facet_wrap(~type,scales = "free_y", nrow = 2) +
-  geom_hline(data = subset(facet_data, type == "mean_abundance"), 
+  geom_hline(data = subset(facet_data, type == "Abundance"), 
              aes(yintercept = mean(trait_table_all$total)), lty= 2)+
-  geom_hline(data = subset(facet_data, type == "mean_Fdiv"), 
+  geom_hline(data = subset(facet_data, type == "Functional Divergence"), 
              aes(yintercept = mean(trait_table_all$FDiv,na.rm=T)), lty= 2) +
-  geom_hline(data = subset(facet_data, type == "mean_FEve"), 
+  geom_hline(data = subset(facet_data, type == "Functional Evenness"), 
              aes(yintercept = mean(trait_table_all$FEve,na.rm=T)), lty= 2) +
-  geom_hline(data = subset(facet_data, type == "mean_FRich"), 
+  geom_hline(data = subset(facet_data, type == "Functional Richness"), 
              aes(yintercept = mean(trait_table_all$FRich,na.rm=T)), lty= 2) +
-  geom_hline(data = subset(facet_data, type == "mean_Jost"), 
+  geom_hline(data = subset(facet_data, type == "Jost Diversity"), 
              aes(yintercept = mean(trait_table_all$jost,na.rm=T)), lty= 2) +
-  geom_hline(data = subset(facet_data, type == "mean_SR"), 
-             aes(yintercept = mean(trait_table_all$SR,na.rm=T)), lty= 2)
+  geom_hline(data = subset(facet_data, type == "Species Richness"), 
+             aes(yintercept = mean(trait_table_all$SR,na.rm=T)), lty= 2)  + 
+  geom_smooth(data = subset(facet_data, type == "Abundance"), method = "glm.nb", 
+              se = TRUE, 
+              formula = y ~ poly(x,4), aes(x = time_code, y = value),
+              colour = "red") + 
+  geom_smooth(data = subset(facet_data, type == "Functional Evenness"), method = "lm", 
+              se = TRUE, 
+              formula = y ~ poly(x,2), aes(x = time_code, y = value),
+              colour = "red") +
+  geom_smooth(data = subset(facet_data, type == "Functional Richness"), method = "lm", 
+              se = TRUE, 
+              formula = y ~ poly(x,3), aes(x = time_code, y = value),
+              colour = "red") +
+  geom_smooth(data = subset(facet_data, type == "Species Richness"), method = "glm", 
+              method.arg = list(family = "poisson"),
+              se = TRUE, 
+              formula = y ~ poly(x,4), aes(x = time_code, y = value),
+              colour = "red") +
+  labs(x = "", y =NULL) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, face = "bold", vjust = 0.5),
+        strip.text = element_text(size = 10, face = "bold"))
 
 
 
