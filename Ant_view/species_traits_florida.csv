@@ -1,0 +1,50 @@
+Subfamily,species,Colony_size,WL,HW,EL,ML,Notes
+Myrmicinae,Aphaenogaster.ashmeadi,300,2.058,0.484450923,0.117832847,0.143100097,
+Myrmicinae,Aphaenogaster.floridana,50,2.0195,0.505075514,0.145085417,0.157464719,
+Myrmicinae,Aphaenogaster.treatae,300,2.231,0.498879426,0.123935455,0.161362618,
+Formicinae,Brachymyrmex.depilis,200,0.406,0.921182266,0.20320197,0.15270936,
+Formicinae,Camponotus.castaneus,350,3.4595,0.53418124,0.145252204,0.085127909,
+Formicinae,Camponotus.floridanus,10000,3.713,0.828575276,0.166576892,0.120118503,
+Formicinae,Camponotus.nearcticus,69,2.5275,0.598021761,0.159446093,0.088625124,
+Formicinae,Camponotus.socius,350,4.4175,0.690662139,0.141143181,0.117600453,
+Myrmicinae,Cardiocondyla.emeryi,50,0.52,0.653846154,0.167307692,0.066346154,
+Myrmicinae,Crematogaster.ashmeadi,300,0.8635,0.888245512,0.206137811,0.126230457,
+Ponerinae,Cryptopone.gilva,20,1.062,0.648775895,0.032015066,0.254237288,got from morreau
+Myrmicinae,Cyphomyrmex.minutus,150,0.9915,0.705496722,0.143217347,0.105900151,
+Myrmicinae,Cyphomyrmex.rimosus,150,1.112,0.667715827,0.147482014,0.161870504,
+Proceratiinae,Discothyrea.testacea,12,0.478,0.849372385,0.031380753,0.021966527,in general from morreau
+Dolichoderinae,Dorymyrmex.bossutus,1000,0.971,0.551493306,0.166838311,0.091658084,
+Dolichoderinae,Dorymyrmex.bureni,1000,1.315,0.657794677,0.192015209,0.105323194,
+Dolichoderinae,Forelius.pruinosus,10000,0.7235,0.676572218,0.174153421,0.08154803,
+Formicinae,Formica.archboldi,500,2.3745,0.47567909,0.174141925,0.106127606,
+Formicinae,Formica.pallidefulva,400,2.086,0.47147651,0.168504314,0.078619367,
+Ponerinae,Hypoponera.opacior,50,0.816,0.630514706,0.03247549,0.210784314,
+Myrmicinae,Monomorium.pharaonis,1591,0.654,0.604740061,0.113914373,0.083333333,got the average between 800 and 2382 from orrea
+Formicinae,Nylanderia.arenivaga,100,0.7605,0.585798817,0.168310322,0.103221565,
+Formicinae,Nylanderia.wojciki,100,0.6315,0.670625495,0.193982581,0.098178939,
+Ponerinae,Odontomachus.brunneus,200,2.6995,0.632709761,0.141322467,0.413965549,
+Myrmicinae,Pheidole.adrianoi,350,0.696,1.285201149,0.159482759,0.289511494,
+Myrmicinae,Pheidole.carrolli,1033,1.3015,1.099116404,0.145601229,0.254321936,average of pheidole
+Myrmicinae,Pheidole.dentata,800,1.103,1.028105168,0.173164098,0.296464189,
+Myrmicinae,Pheidole.dentigula,300,0.7065,1.112526539,0.114649682,0.237791932,
+Myrmicinae,Pheidole.floridana,1000,0.824,1.034587379,0.128640777,0.229975728,
+Myrmicinae,Pheidole.metallescens,1000,0.7605,1.131492439,0.165023011,0.202498356,
+Myrmicinae,Pheidole.moerens,600,0.738,1.18495935,0.169376694,0.346883469,
+Myrmicinae,Pheidole.morrisii,2500,1.186,0.963743676,0.160623946,0.193086003,
+Myrmicinae,Pheidole.tysoni,1033,0.8,1.111875,0.139375,0.223125,average of pheidole
+Myrmicinae,Pogonomyrmex.badius,4500,3.0035,1.061761279,0.157149992,0.142999834,
+Formicinae,Prenolepis.imparis,2485,1.122,0.687165775,0.200534759,0.117647059,"1600, 3370 average from morrea"
+Ponerinae,Pseudoneoponera.stigma,9,1.809,0.653399668,0.037589829,0.22498618,from morrea
+Myrmicinae,Solenopsis.carolinensis,200,0.5195,0.742059673,0.091434071,0.12319538,
+Myrmicinae,Solenopsis.globularia,50,0.7785,0.607578677,0.123314066,0.079640334,
+Myrmicinae,Solenopsis.invicta,150000,1.388,0.640489914,0.11167147,0.063760807,
+Myrmicinae,Solenopsis.nickersoni,200,0.418,0.700956938,0.114832536,0.406698565,
+Myrmicinae,Solenopsis.picta,200,0.56,0.700892857,0.079464286,0.096428571,
+Myrmicinae,Solenopsis.pergandei,10000,0.51,0.647058824,0.066666667,0.384313725,
+Myrmicinae,Solenopsis.tennessensis,200,0.429,0.710955711,0.048951049,0.393939394,
+Myrmicinae,Strumigenys.eggersi,50,0.43,0.802325581,0.068604651,0.593023256,
+Myrmicinae,Strumigenys.emmae,50,0.44,0.818181818,0.05,0.306818182,given genera 50 used
+Myrmicinae,Temnothorax.pergandei,50,0.9465,0.652403592,0.190702588,0.109350238,
+Myrmicinae,Temnothorax.texanus,50,0.728,0.594093407,0.159340659,0.10989011,
+Myrmicinae,Trachymyrmex.septentrionalis,300,1.507,0.683808892,0.108825481,0.205706702,
+Myrmicinae,Wasmania.auropunctata,800,0.4795,0.822732013,0.17101147,0.165797706,
