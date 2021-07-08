@@ -219,7 +219,8 @@ for(i in 1:length(time_stamp_list)){
 }
 
 
-
+saveRDS(trait_table_all, "trait_table_all.rds")
+trait_table_all<-readRDS("trait_table_all.rds")
 
 
 
@@ -300,13 +301,14 @@ levels(facet_data$type)<-c("Abundance", "Functional Diversity","Functional Diver
                            "Functional Richness", "Jost Diversity", "Species Richness")
 
 
-
 ggplot(data = facet_data) + 
   geom_rect(xmin=17652,
             xmax=17806, ymin=-Inf, ymax=Inf, fill="lightblue", alpha=0.03) +
   geom_rect(xmin=18017,
             xmax=Inf, ymin=-Inf, ymax=Inf, fill="lightblue", alpha=0.03) +
   geom_line(aes(x= (time_code), y = value), size = 1.5) +
+  geom_line(aes(x= (time_code), y = value), size = 1.5) +
+  
   geom_errorbar(aes(x = time_code, ymin = value-std.error,
                     ymax = value+std.error), width = 0.5)+
   geom_point(aes(x= (time_code), y = value), 
@@ -330,7 +332,7 @@ ggplot(data = facet_data) +
               colour = "red") + 
   geom_smooth(data = subset(facet_data, type == "Functional Evenness"), method = "lm", 
               se = TRUE, 
-              formula = y ~ poly(x,2), aes(x = time_code, y = value),
+              formula = y ~ poly(x,3), aes(x = time_code, y = value),
               colour = "red") +
   geom_smooth(data = subset(facet_data, type == "Functional Richness"), method = "lm", 
               se = TRUE, 
@@ -339,12 +341,33 @@ ggplot(data = facet_data) +
   geom_smooth(data = subset(facet_data, type == "Species Richness"), method = "glm", 
               method.arg = list(family = "poisson"),
               se = TRUE, 
-              formula = y ~ poly(x,4), aes(x = time_code, y = value),
+              formula = y ~ poly(x,3), aes(x = time_code, y = value),
+              colour = "red") +
+  geom_smooth(data = subset(facet_data, type == "Functional Divergence"), method = "lm", 
+              se = TRUE, 
+              formula = y ~ poly(x,3), aes(x = time_code, y = value),
               colour = "red") +
   labs(x = "", y =NULL) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, face = "bold", vjust = 0.5),
         strip.text = element_text(size = 10, face = "bold"))
+
+
+saveRDS(facet_data, "facet_data_for_graphs.rds")
+
+ggplot(data = subset(facet_data, type == "Abundance")) + 
+  geom_rect(xmin=17652,
+            xmax=17806, ymin=-Inf, ymax=Inf, fill="lightblue", alpha=0.03) +
+  geom_rect(xmin=18017,
+            xmax=Inf, ymin=-Inf, ymax=Inf, fill="lightblue", alpha=0.03) +
+  geom_line(aes(x= (time_code), y = value), size = 1.5) +
+  geom_line(aes(x= (time_code), y = value), size = 1.5) +
+  
+  geom_errorbar(aes(x = time_code, ymin = value-std.error,
+                    ymax = value+std.error), width = 0.5)+
+  geom_point(aes(x= (time_code), y = value), 
+             pch = 21, size = 3, fill = "white",stroke = 2.5)
+
 
 
 ####facet graph by ses of functional metrics
@@ -390,8 +413,7 @@ ggplot(SES.data) +
   geom_hline(yintercept = 0, lty = 1) +
   theme_bw()
 
-##quick models to assess functional metrics
-#June to October Wet Season
+#Setting up model dataframe and saving it
 month_list = df_c %>% dplyr::select(time_code, Month)
 month_list =unique(month_list[,c("time_code", "Month")])
 

@@ -66,7 +66,7 @@ for(i in 1:length(time_stamp_list)){
     ungroup()
   #now we have the traits
   species_list<-by_sp$Species
-  time1_traits<-by_sp %>% dplyr::select(log_colony,WL,HW,EL,ML)
+  time1_traits<-by_sp %>% dplyr::select(WL,HW,EL,ML)
   rownames(time1_traits)<-species_list
   #now we have the comm data
   time1_comm <- df_c %>% filter(time_code == time_stamp_list[i]) 
@@ -192,4 +192,4 @@ for(i in 1:length(time_stamp_list)){
 
 
 
-
+?dbfd
