@@ -230,7 +230,7 @@ saveRDS(shiny_data, "~/Google Drive/Shinyapp/data_ants.rds")
 #trait plots
 species_traits<-read.csv("Data/species_traits_florida.csv")
 
-sp1<-species_traits %>% dplyr::filter(species == "Aphaenogaster.ashmeadi") %>%
+sp1<-species_traits %>% dplyr::filter(species %in% c("Aphaenogaster.ashmeadi", "Pheidole.moerens")) %>%
   dplyr::select(species,WL, HW, EL, ML) %>%
   pivot_longer(cols = c(WL, HW, EL, ML)) 
 
