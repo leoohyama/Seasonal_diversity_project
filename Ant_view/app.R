@@ -2,16 +2,26 @@ library(shiny)
 library(tidyverse)
 df<-readRDS("data_ants.rds")
 species_traits<-read.csv("species_traits_florida.csv")
+library(patchwork)
 
 
 
 ui <- fluidPage(
-    titlePanel("Compare traits and seasonal dynamics of ants of Central Florida!"),
-    selectInput("Speciesone", "Species 1", unique(df$Species)),
-    selectInput("Speciestwo", "Species 2", unique(df$Species)),
-    plotOutput("plot_ant"),
-    plotOutput("plot_ant1"),
-    plotOutput("webplot")
+    
+    
+    titlePanel("Compare traits and seasonal dynamics of the ants of Central Florida!"),
+    tableOutput("data"),
+    fluidRow(
+        column(4,selectInput("Speciesone", "Species 1", unique(df$Species))),
+        column(4,selectInput("Speciestwo", "Species 2", unique(df$Species)))
+        
+    ),
+    plotOutput("plot_ant", width = "100%", click = "plot_click"),
+    plotOutput("plot_ant1", width = "100%", click = "plot_click"),
+    plotOutput("plot_ant2", width = "100%"),
+    
+
+    
 )
 
 server <- function(input, output, server) {
@@ -43,9 +53,11 @@ server <- function(input, output, server) {
             theme(axis.text.x = element_text(angle = 45, face = "bold", size = 12, vjust =  0.5),
                   legend.position = "none" ,
                   axis.ticks = element_blank(),
-                  
+                  plot.margin = unit(c(0,0,0,0), "cm"),
                   strip.text = element_text(family = "Helvetica", face= "bold",
                                             size =12))
+        
+     
     },
     height = 400,width = 600)
     
@@ -63,19 +75,22 @@ server <- function(input, output, server) {
             theme(axis.text.x = element_text(angle = 45, face = "bold", size = 12, vjust =  0.5),
                   legend.position = "none" ,
                   axis.ticks = element_blank(),
-                  
+                  plot.margin = unit(c(0,0,0,0), "cm"),
                   strip.text = element_text(family = "Helvetica", face= "bold",
                                             size =12))
-    },
-    height = 400,width = 600)
+    },height = 400,width = 600)
     
-    output$webplot<-renderPlot({
-        
+    output$plot_ant2<-renderPlot({
         ggplot(data = sp1(), aes(x = name, y = value, fill = species)) +
-            geom_bar(stat = "identity") + coord_polar()
-    },
-    height = 400,width = 600)
+            geom_bar(stat = "identity") + coord_polar() +
+            labs(title = "Trait values", y = "Measurement in milimeters", x = NA) + 
+            theme_dark() +
+            theme(plot.margin = unit(c(0,0,0,0), "cm"))
+    },height = 400,width = 600)
     
+    output$data <- renderTable({
+        nearPoints(dat(), input$plot_click, xvar = "time_code", yvar = "total_f")
+    })
     
 }
 

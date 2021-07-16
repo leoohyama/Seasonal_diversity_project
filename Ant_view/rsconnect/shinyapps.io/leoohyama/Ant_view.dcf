@@ -5,9 +5,9 @@ account: leoohyama
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4365752
-bundleId: 4799975
+bundleId: 4800663
 url: https://leoohyama.shinyapps.io/Ant_view/
-when: 1625758892.62249
-lastSyncTime: 1625758892.6225
+when: 1625771291.03308
+lastSyncTime: 1625771291.03309
 asMultiple: FALSE
 asStatic: FALSE
